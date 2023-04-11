@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
   int N;
   fscanf(input_file, "%d", &N);
 
-  char** cars = malloc(N * sizeof(char*));
   float id, model, average_lap_time, victory_count;
   for (int i = 0; i < N; i++) {
     fscanf(input_file, "%f %f %f %f", &id, &model, &average_lap_time, &victory_count);
