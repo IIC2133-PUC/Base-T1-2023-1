@@ -17,8 +17,13 @@ OBJ=obj
 # OPTIMIZACIÓN POR COMPILADOR (descomenta el que necesites, comenta el otro)  #
 ###############################################################################
 
-OPT=-g # Guardar toda la información para poder debugear. No optimiza
-# OPT=-O3 # Optimiza al máximo, descarta toda la información de debug.
+OPT=-O0# No optimiza.
+# OPT=-O1# Optimiza un poquito
+# OPT=-O2# Optimiza bastante
+# OPT=-O3# Optimiza al máximo. Puede ser peor que -O2 según tu código
+
+# Nivel de optimización para las librerías del código base (COMMON)
+BASE_OPT=-O2
 
 ###############################################################################
 # PARÁMETROS                                                                  #
@@ -26,8 +31,8 @@ OPT=-g # Guardar toda la información para poder debugear. No optimiza
 
 # -Wunused = (Warn Unused) Da aviso de las variables que no se estan usando
 # -Wall    = (Warn All) Da aviso de todos los posibles errores de compilación
-# $(OPT)   = Nivel de optimización
-CFLAGS=-Wunused -Wall $(OPT)
+# -g       = (Debug) Guarda la información para debugear
+CFLAGS=-Wunused -Wall -g
 
 ###############################################################################
 # LIBRERÍAS                                                                   #
@@ -35,20 +40,20 @@ CFLAGS=-Wunused -Wall $(OPT)
 
 # Matemáticas (C Math library)
 MTH=-lm
-# Portable Network Graphics (PNG)
-PNG=-lpng
+# Interfaz gráfica GTK+
+GTK=`pkg-config --cflags --libs gtk+-3.0`
 
-LIB=$(MTH) $(PNG)
+LIB=$(MTH) $(GTK)
 
 ###############################################################################
 # MÓDULOS Y PROGRAMAS                                                         #
 ###############################################################################
 
 # Directorios con elementos de uso común
-COMMON=
+COMMON=visualizer engine
 
 # Directorios que serán compilados a un programa
-PROGRAMS=bstmate kdtree
+PROGRAMS=visualizer_core simulate qsortcars kdtree bstmate
 
 # Todos los directorios que contienen archivos de código
 SRCDIR=$(COMMON) $(PROGRAMS)
@@ -101,6 +106,8 @@ $(OBJDIR):
 
 # Dependencias locales para un archivo .o
 LOCAL_DEPS = $(filter $(patsubst $(OBJ)/%, $(SRC)/%, $(dir $(1)))%, $(HDRFILES))
+# Flag de optimización para el código común
+COMMON_OPT = $(if $(findstring $(word 2, $(subst /, ,$@)), $(COMMON)),$(BASE_OPT),$(OPT))
 
 # Esta regla compila cada archivo de objeto .o
 # Pero sólo si alguno de los siguientes fue modificado desde la última vez
@@ -109,14 +116,14 @@ LOCAL_DEPS = $(filter $(patsubst $(OBJ)/%, $(SRC)/%, $(dir $(1)))%, $(HDRFILES))
 ## algún .h de los directorios comunes
 ## esta mismísima Makefile
 obj/%.o: src/%.c $$(call LOCAL_DEPS,$$@) $(DEPS) Makefile
-	@$(CC) $(CFLAGS) $< -c -o $@ $(LIB) && echo "compiled '$@'"
+	@$(CC) $(CFLAGS) $(call COMMON_OPT) $< -c -o $@ $(LIB) && echo "compiled '$@'"
 
 # Esta regla conecta y compila cada programa a partir de los .o
 # Pero solo una vez que se haya llamado la regla anterior con lo siguiente
 ## todos los .o de la carpeta respectiva del programa
 ## todos los .o de los directorios comunes
 $(PROGRAMS): $$(filter obj/$$@/% $(foreach i, $(COMMON), obj/$(i)/%), $(OBJFILES))
-	@$(CC) $(CFLAGS) $^ -o $@ $(LIB) && echo "compiled '$@'"
+	@$(CC) $(CFLAGS) $(OPT) $^ -o $@ $(LIB) && echo "compiled '$@'"
 
 ###############################################################################
 #                   Cualquier duda no temas en preguntar!                     #

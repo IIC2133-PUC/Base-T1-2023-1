@@ -27,8 +27,15 @@ int main(int argc, char** argv) {
   FILE* input_file = fopen(argv[1], "r");
   FILE* output_file = fopen(argv[2], "w");
 
-  // TODO: Implementar
-  // Puedes utilizar string_equals para comparar strings
+  int N;
+  fscanf(input_file, "%d", &N);
+
+  char** cars = malloc(N * sizeof(char*));
+  float id, model, average_lap_time, victory_count;
+  for (int i = 0; i < N; i++) {
+    fscanf(input_file, "%f %f %f %f", &id, &model, &average_lap_time, &victory_count);
+    printf("%f %f %f %f", id, model, average_lap_time, victory_count);
+  }
 
   fclose(input_file);
   fclose(output_file);
