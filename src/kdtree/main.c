@@ -1,63 +1,74 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include "simulation.h"
+#include "../visualizer/visualizer.h"
 
-
-/* Retorna true si ambos strings son iguales */
-bool string_equals(char *string1, char *string2)
+int main(int argc, char **argv)
 {
-  return !strcmp(string1, string2);
-}
-
-/* Revisa que los parametros del programa sean válidos */
-bool check_arguments(int argc, char **argv)
-{
-  if (argc != 3)
+  // Por defecto se abre la ventana
+  bool visualize = true;
+  if (argc == 4 && !strcmp(argv[3], "--novis"))
   {
-    printf("Modo de uso: %s INPUT OUTPUT\n", argv[0]);
+    visualize = false;
+  }
+  else if (argc < 3 || argc >= 4)
+  {
+    printf("Modo de uso: %s INPUT OUTPUT [--novis]\n", argv[0]);
     printf("Donde:\n");
-    printf("\tINPUT es la ruta del archivo de input\n");
-    printf("\tOUTPUT es la ruta del archivo de output\n");
-    exit(1);
+    printf("\tINPUT es la ruta al archivo de input que describe la escena\n");
+    printf("\tOUTPUT es la ruta al archivo en donde se reportarán las colisiones\n");
+    printf("\tEl flag opcional --novis indica que no se debe abrir la visualización del programa\n");
+    // Exit code 1: Programa llamado sin todos los argumentos
+    return 1;
   }
 
-  return true;
-}
-int main(int argc, char** argv) {
-    check_arguments(argc, argv);
+  // Inicializa los elementos de la simulación, y abre la ventana si visualize es true
+  Simulation *sim = simulation_init_from_file(argv[1], visualize);
 
-    FILE* input_file = fopen(argv[1], "r");
-    FILE* output_file = fopen(argv[2], "w");
+  // El archivo donde iremos reportando las colisiones
+  FILE *output_file = fopen(argv[2], "w");
 
-    int criteria;
-    int node_count;
-    int query_count;
-    /* leemos el criterio para armar el arbol */
-    fscanf(input_file, "%d", &criteria);
-
-    fscanf(input_file, "%d", &node_count);
-
-    /* leemos Cada nodo */
-    int index, conductivness, hardness, inatorness;
-    for(int i=0; i<node_count; i++){
-        fscanf(input_file, "%d %d %d %d", &index, &conductivness, &hardness, &inatorness);
-        printf("%d %d %d %d\n", index, conductivness, hardness, inatorness);
+  // Para cada frame
+  for (int f = 0; f < sim->frames; f++)
+  {
+    // Para cada particula
+    for (int p = 0; p < sim->particle_count; p++)
+    {
+      // Inicialmente, esta particula no ha chocado con ningun segmento
+      sim->particles[p].intersected_segment = NULL;
+      // Por cada segmento
+      // TODO: No revisar todos los segmentos, usar BVH para descartar los que estén muy lejos
+      for (int s = 0; s < sim->segment_count; s++)
+      {
+        // Si la particula choca con el segmento
+        if (particle_segment_collision(sim->particles[p], sim->segments[s]))
+        {
+          // Si es que no ha chocado con nada, o si no desempatamos por ID
+          if (!sim->particles[p].intersected_segment || sim->segments[s].ID < sim->particles[p].intersected_segment->ID)
+          {
+            sim->particles[p].intersected_segment = &sim->segments[s];
+          }
+        }
+      }
+      // Si hubo intersección
+      if (sim->particles[p].intersected_segment)
+      {
+        // Desviamos la partícula según el segmento con el que chocó
+        particle_bounce_against_segment(&sim->particles[p], *sim->particles[p].intersected_segment);
+        // Reportamos la colisión en el archivo de output
+        fprintf(output_file, "%d %d %d\n", f, sim->particles[p].ID, sim->particles[p].intersected_segment->ID);
+      }
+      // Finalmente, la particula avanza
+      particle_move(&sim->particles[p]);
     }
+    // Si la ventana está abierta, dibujar las particulas en sus nuevas posiciones
+    visualizer_draw_particles(sim->particles, sim->particle_count);
+  }
+  // Hace free de todo lo que se creo en simulation_init. Cierra la ventana.
+  simulation_destroy(sim);
 
+  fclose(output_file);
 
-    fscanf(input_file, "%d", &query_count);
-    /* leemos las consultas */
-    char command[32];
-    int value;
-    for(int i=0; i<query_count; i++){
-        fscanf(input_file, "%s %d", command, &value);
-        printf("%s %d\n", command, value);
-        /* completar la revision de comando y ejecucion de los mismos */
-    }
-
-    fclose(input_file);
-    fclose(output_file);
-    return 0;
+  return 0;
 }
-

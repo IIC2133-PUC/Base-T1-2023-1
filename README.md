@@ -17,14 +17,12 @@ src/
 │   ... Otros archivos de la parte 2
 ├── kdtree/
 │   ├── main.c
+│   ├── simulation.c
+│   ├── simulation.h
 │   ... Otros archivos de la parte 3
 -----------------------------------------------------------------------
 │   LIBRERIAS PARA EL VISUALIZADOR ( No es necesario modificarlas )   │
 -----------------------------------------------------------------------
-│── simulate/
-│   ├── main.c
-│   ├── simulation.c
-│   ├── simulation.h
 │── engine/
 │   ├── math/
 │   ├── vector.c
