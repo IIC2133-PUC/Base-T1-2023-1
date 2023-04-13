@@ -53,7 +53,7 @@ LIB=$(MTH) $(GTK)
 COMMON=visualizer engine
 
 # Directorios que serán compilados a un programa
-PROGRAMS=visualizer_core simulate qsortcars kdtree bstmate
+PROGRAMS=visualizer_core qsortcars kdtree bstmate
 
 # Todos los directorios que contienen archivos de código
 SRCDIR=$(COMMON) $(PROGRAMS)
